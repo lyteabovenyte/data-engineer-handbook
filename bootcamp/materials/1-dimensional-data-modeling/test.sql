@@ -8,6 +8,7 @@
 --                             )
 --
 
+select * from player_seasons;
 -- CREATE TYPE scoring_class AS ENUM('star', 'good', 'average', 'bad');
 --
 -- create table players (
@@ -47,22 +48,22 @@ SELECT
     COALESCE(t.draft_round, y.draft_round) as draft_round,
     COALESCE(t.draft_number, y.draft_number) as draft_number,
     case when y.season_stats is null
-then array[ROW(
-    t.season,
-    t.gp,
-    t.pts,
-    t.reb,
-    t.ast
+        then array[ROW(
+            t.season,
+            t.gp,
+            t.pts,
+            t.reb,
+            t.ast
             )::season_stats]
-when t.season is not null then y.season_stats || array[ROW(
-    t.season,
-    t.gp,
-    t.pts,
-    t.reb,
-    t.ast
-    )::season_stats]
-else y.season_stats
-end as season_stats,
+        when t.season is not null then y.season_stats || array[ROW(
+            t.season,
+            t.gp,
+            t.pts,
+            t.reb,
+            t.ast
+            )::season_stats]
+        else y.season_stats
+    end as season_stats,
     case
         when t.season is not null then
             case
