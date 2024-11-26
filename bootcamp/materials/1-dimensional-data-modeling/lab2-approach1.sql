@@ -4,6 +4,24 @@
 
 -- have to redefine the players table and fix the typo and order of inserts   :
 
+-- drop table players;
+-- drop table players_scd;
+-- drop type season_stats;
+-- drop type scoring_class;
+
+
+
+CREATE TYPE season_stats AS (
+    season Integer,
+    pts REAL,
+    ast REAL,
+    reb REAL,
+    weight INTEGER
+    );
+
+CREATE TYPE scoring_class AS
+    ENUM ('bad', 'average', 'good', 'star');
+
 
 CREATE TABLE players (
                          player_name TEXT,
@@ -110,6 +128,7 @@ ON w.player_name = s.player_name;
 ALTER TABLE players
     RENAME COLUMN scorer_class TO scoring_class;
 
+
 create table players_scd
 (
     player_name    TEXT,
@@ -123,9 +142,9 @@ create table players_scd
 
 
 
-select * from players_scd;
+-- select * from players_scd;
 
-drop table players_scd;
+-- drop table players_scd;
 
 insert into players_scd
 with with_previous as (
@@ -163,4 +182,6 @@ SELECT player_name,
 from with_streaks
 GROUP BY player_name, streak_indentifier, is_active, scoring_class
 ORDER BY player_name, streak_indentifier;
+
+select * from players_scd;
 
