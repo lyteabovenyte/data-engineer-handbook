@@ -1,54 +1,58 @@
-
--- drop type films_struct;
-
--- CREATE TYPE quality_class AS ENUM('star', 'good', 'average', 'bad');
-drop table actors;
-
-CREATE TABLE actors (
-                        actor text,
-                        actorid text,
-                        current_year integer,
-                        films films_struct[],
-                        primary key (actorid, current_year)
-);
-
+-- TYPE films_struct
 drop type films_struct;
 
-
-CREATE TYPE films_struct as (
-    film TEXT,
-    votes INTEGER,
-    rating REAL,
-    filmid TEXT
+create type films_struct as (
+    film text,
+    year integer,
+    votes integer,
+    rating real,
+    filmid text
     );
 
 
-WITH last_year AS (
-    SELECT *
-    FROM actors
-    WHERE current_year = 1969
-),
-     this_year AS (
-         SELECT
-             actorid,
-             actor,
-    year,
-    CASE WHEN year IS NULL THEN ARRAY[]::films_struct[]
-    ELSE ARRAY_AGG(ROW(film, votes, rating, filmid)::films_struct)
-END AS films
-         FROM actor_films
-         WHERE year = 1970
-         GROUP BY actorid, actor,year
-     )
-INSERT INTO actors
-SELECT
-    COALESCE(ty.actor, ly.actor) actor,
-    COALESCE(ty.actorid, ly.actorid) actorid,
-    COALESCE(ly.films, ARRAY[]::films_struct[]) ||
-    CASE WHEN ty.year IS NOT NULL THEN ty.films
-         ELSE ARRAY[]::films_struct[]
-        END as films,
-    COALESCE(ty.year,ly.current_year+1) as current_year
-FROM last_year ly
-         FULL OUTER JOIN this_year ty
-                         ON ly.actorid = ty.actorid;
+-- TABLE actors
+drop table actors;
+
+create table actors
+(
+    actor        text,
+    actorid      text,
+    current_year integer,
+    films        films_struct[]
+);
+
+-- removing temportal value and aggregating on films and year
+with years as (
+    select *
+    from generate_series(1970, 2021) as year
+    ),
+    last_year as (
+select *
+from actors
+    inner join years on actors.current_year = years.year
+    ),
+    current_year_data as (
+select a.actorid,
+    a.actor,
+    a.year,
+    array_agg(row(film, a.year, votes, rating, filmid)::films_struct) as films,
+    avg(rating) as avg_rating
+from actor_films a
+    inner join years y on a.year = y.year + 1
+group by a.actorid, a.actor, a.year
+    )
+select
+    coalesce(c.actorid, l.actorid) as actorid,
+    coalesce(c.actor, l.actor) as actor,
+    case
+        when l.films is null then c.films
+        when c.year is not null then l.films || c.films
+        else l.films
+        end as films,
+
+
+    coalesce(c.year, l.year + 1) as current_year
+from current_year_data c
+         full outer join last_year l
+                         on c.actorid = l.actorid
+order by c.actor, c.year;
